@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2013 The CyanogenMod Project
+ * Copyright (C) 2017 The LineageOS Project
  *
  * Modified for Xperia Open Source Project
  *
@@ -59,8 +60,10 @@ public class CyanogenSettingsPage extends SetupPage {
     public static final String KEY_ENABLE_NAV_KEYS = "KEY_ENABLE_NAV_KEYS";
     public static final String KEY_APPLY_DEFAULT_THEME = "apply_default_theme";
     public static final String KEY_BUTTON_BACKLIGHT = "pre_navbar_button_backlight";
+    public static final String KEY_PRIVACY_GUARD = "privacy_guard_default";
 
     public static final String XOSP_COMMUNITY_URI = "https://plus.google.com/u/0/communities/117671498272072664538";
+
     public CyanogenSettingsPage(Context context, SetupDataCallbacks callbacks) {
         super(context, callbacks);
     }
@@ -86,6 +89,11 @@ public class CyanogenSettingsPage extends SetupPage {
     @Override
     public int getTitleResId() {
         return R.string.setup_xosp_services;
+    }
+
+    @Override
+    public int getIconResId() {
+        return R.drawable.ic_features;
     }
 
     private static void writeDisableNavkeysOption(Context context, boolean enabled) {
@@ -125,6 +133,7 @@ public class CyanogenSettingsPage extends SetupPage {
             }
         });
         handleDefaultThemeSetup();
+        handlePrivacyGuard();
     }
 
     private void handleDefaultThemeSetup() {
@@ -142,6 +151,15 @@ public class CyanogenSettingsPage extends SetupPage {
 
         } else {
             getCallbacks().finishSetup();
+        }
+    }
+
+    private void handlePrivacyGuard() {
+        Bundle mPrivacyData = getData();
+        if (mPrivacyData != null && mPrivacyData.containsKey(KEY_PRIVACY_GUARD)) {
+            CMSettings.Secure.putInt(mContext.getContentResolver(),
+                    CMSettings.Secure.PRIVACY_GUARD_DEFAULT,
+                    mPrivacyData.getBoolean(KEY_PRIVACY_GUARD) ? 1 : 0);
         }
     }
 
@@ -167,9 +185,11 @@ public class CyanogenSettingsPage extends SetupPage {
         private ImageView mKillSwitchStatus;
         private View mDefaultThemeRow;
         private View mNavKeysRow;
+        private View mPrivacyGuardRow;
         private CheckBox mMetrics;
         private CheckBox mDefaultTheme;
         private CheckBox mNavKeys;
+        private CheckBox mPrivacyGuard;
 
         private boolean mHideNavKeysRow = false;
         private boolean mHideThemeRow = false;
@@ -193,6 +213,15 @@ public class CyanogenSettingsPage extends SetupPage {
             }
         };
 
+        private View.OnClickListener mPrivacyGuardClickListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                boolean checked = !mPrivacyGuard.isChecked();
+                mPrivacyGuard.setChecked(checked);
+                mPage.getData().putBoolean(KEY_PRIVACY_GUARD, checked);
+            }
+        };
+
         @Override
         protected void initializePage() {
 
@@ -202,8 +231,10 @@ public class CyanogenSettingsPage extends SetupPage {
             ClickableSpan clickableSpan = new ClickableSpan() {
                 @Override
                 public void onClick(View textView) {
-                    final Intent intent = new Intent(SetupWizardApp.ACTION_VIEW_LEGAL);
-                    intent.setData(Uri.parse(XOSP_COMMUNITY_URI));
+                    // At this point of the setup, the device has already been unlocked (if frp
+                    // had been enabled), so there should be no issues regarding security
+                    final Intent intent = new Intent(Intent.ACTION_VIEW,
+                            Uri.parse(XOSP_COMMUNITY_URI));
                     try {
                         getActivity().startActivity(intent);
                     } catch (Exception e) {
@@ -270,6 +301,12 @@ public class CyanogenSettingsPage extends SetupPage {
                         isKeyDisablerActive(getActivity());
                 mNavKeys.setChecked(navKeysDisabled);
             }
+
+            mPrivacyGuardRow = mRootView.findViewById(R.id.privacy_guard);
+            mPrivacyGuardRow.setOnClickListener(mPrivacyGuardClickListener);
+            mPrivacyGuard = (CheckBox) mRootView.findViewById(R.id.privacy_guard_checkbox);
+            mPrivacyGuard.setChecked(CMSettings.Secure.getInt(getActivity().getContentResolver(),
+                    CMSettings.Secure.PRIVACY_GUARD_DEFAULT, 0) == 1);
         }
 
         @Override

@@ -48,7 +48,6 @@ public class SetupWizardUtils {
     private static final String TAG = SetupWizardUtils.class.getSimpleName();
 
     public static final String GOOGLE_SETUPWIZARD_PACKAGE = "com.google.android.setupwizard";
-    private static final String MODMOD_PACKAGE = "com.cyanogen.ambient.core";
 
     private SetupWizardUtils(){}
 
@@ -194,6 +193,11 @@ public class SetupWizardUtils {
 
     public static boolean isOwner() {
         return UserHandle.getCallingUserHandle().isOwner();
+    }
+
+    public static boolean hasGMS(Context context) {
+        return GooglePlayServicesUtil.isGooglePlayServicesAvailable(context) !=
+                ConnectionResult.SERVICE_MISSING;
     }
 
     public static boolean accountExists(Context context, String accountType) {
